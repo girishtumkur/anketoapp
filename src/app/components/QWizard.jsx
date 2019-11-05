@@ -1,15 +1,20 @@
 import React from 'react';
+import { QConfirmation } from './QConfirmation'
 
 export class QWizard extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { qIndex: 0, isLoaded: false, emailId: '' };
+        this.state = { qIndex: 0, isLoaded: false, confirmWizard: false };
 
         this.handleNext = this.handleNext.bind(this);
         this.handlePrev = this.handlePrev.bind(this);
         this.handleOptions = this.handleOptions.bind(this);
         this.confirm = this.confirm.bind(this);
         this.submitAnswers = this.submitAnswers.bind(this);
+        this.setQWizard = this.setQWizard.bind(this);
+        this.handleEmail = this.handleEmail.bind(this);
+        this.handleName = this.handleName.bind(this);
+
     }
     componentDidMount() {
         fetch("http://localhost:7200/qbank/fetchq")
@@ -51,15 +56,33 @@ export class QWizard extends React.Component {
         const selectedAnswer = event.target.value;
         this.setState((state) => {
             state.questionList.questions[this.state.qIndex].selectedAnswer = selectedAnswer;
-            this.forceUpdate();
+            return state;
+
 
         });
     }
 
+    handleEmail(email) {
+        this.setState((state) => {
+            state.email = email;
+            return state;
+        }
+        );
+    }
+
+    handleName(name) {
+        this.setState((state) => {
+            state.name = name;
+            return state;
+        }
+        );
+    }
+
     submitAnswers() {
+        alert('incide submit answer');
         const url = "http://localhost:7200/qbank/submitAnswers";
         let data = this.state.questionList;
-        data.emailId = this.state.emailId;
+        data.emailId = this.state.email;
         (async () => {
             try {
                 const response = fetch(url, {
@@ -85,13 +108,22 @@ export class QWizard extends React.Component {
         })();
     }
 
+    setQWizard() {
+
+        this.setState(((state) => {
+            state.confirmWizard = false;
+            return state;
+        }));
+        //this.forceUpdate();
+    }
+
     confirm(event) {
         if (window.confirm("Are you sure you want to submit answers?")) {
-            let email = window.prompt("Enter your Email ID");
-            //callback to call submit button after async setstate method
             this.setState(((state) => {
-                state.emailId = email;
-            }), this.submitAnswers);
+                state.confirmWizard = true;
+                return state;
+            }));
+
         }
     }
 
@@ -102,9 +134,7 @@ export class QWizard extends React.Component {
         let nextStep = this.state.qIndex < this.state.questionList.questions.length - 1 ? true : false;
         let prevStep = this.state.qIndex > 0 ? true : false;
 
-        return <div><h1>Anketo Wizard</h1>
-            <h2> {this.state.questionList.questions[this.state.qIndex].qtext} </h2>
-
+        const questionStep = <div> <h2> {this.state.questionList.questions[this.state.qIndex].qtext} </h2>
             {this.state.questionList.questions[this.state.qIndex].qoptions.map((option) =>
                 <div  >
                     <input type="radio" key={this.state.questionList.questions[this.state.qIndex].record_id}
@@ -113,12 +143,19 @@ export class QWizard extends React.Component {
                     <span> {option}</span>
                 </div>
 
-            )}
+            )
+            }
             <div>
                 <input type="button" disabled={!prevStep} name="prev" value="prev" onClick={this.handlePrev} />
                 <input type="button" disabled={!nextStep} name="next" value="next" onClick={this.handleNext} />
                 {nextStep === false ? <input type="button" name="submit" value="submit answerS" onClick={this.confirm} /> : ''}
             </div>
+        </div>;
+
+        return <div><h1>Anketo Wizard</h1>
+            {this.state.confirmWizard === true ? <QConfirmation email={this.state.email} name={this.state.name}
+                submitAnswers={this.submitAnswers} setQWizard={this.setQWizard} handleEmail={this.handleEmail} handleName={this.handleName} /> : [questionStep]}
+
         </div>
     }
 }
